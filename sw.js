@@ -1,8 +1,16 @@
 // 改动任何文件后把版本号加一,手机下次联网打开时会自动换成新版本
-const CACHE = 'chimp-v1';
+const CACHE = 'brain-v2';
 const ASSETS = [
   './',
   './index.html',
+  './app.js',
+  './lib.js',
+  './words.js',
+  './modes/chimp.js',
+  './modes/span.js',
+  './modes/palace.js',
+  './modes/stroop.js',
+  './modes/schulte.js',
   './manifest.webmanifest',
   './icon-180.png',
   './icon-192.png',

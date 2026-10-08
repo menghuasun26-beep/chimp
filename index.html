@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="黑猩猩">
+<meta name="apple-mobile-web-app-title" content="伪人检测器">
 <meta name="theme-color" content="#12161c">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>黑猩猩记忆</title>
+<title>伪人检测器</title>
 <style>
   :root {
     color-scheme: dark;
@@ -47,39 +47,81 @@
   button {
     appearance: none;
     border: 0;
+    padding: 0;
     background: none;
     color: inherit;
     font: inherit;
   }
 
+  /* ---------- 顶栏 ---------- */
   header {
     flex: none;
     display: flex;
-    justify-content: center;
-    padding: 12px 16px 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 16px 6px;
   }
-  #levelBtn {
+  .pill {
     display: flex;
     align-items: baseline;
-    gap: 8px;
-    padding: 6px 16px;
+    gap: 6px;
+    padding: 6px 12px;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--panel);
+    white-space: nowrap;
   }
-  #levelBtn .lbl, #levelBtn .caret { font-size: 14px; color: var(--muted); }
+  .caret { font-size: 12px; color: var(--muted); }
+  #modeName { font-size: 16px; font-weight: 700; }
+  .stats { display: flex; align-items: center; gap: 10px; }
+  #levelLbl, #levelUnit { font-size: 13px; color: var(--muted); }
   #levelNum {
-    min-width: 2ch;
-    text-align: center;
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     transition: color .4s;
   }
-  #levelNum.up { color: var(--up); transition: none; }
+  .best { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  #bestNum {
+    color: var(--fg);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    transition: color .4s;
+  }
+  #levelNum.up, #bestNum.up { color: var(--up); transition: none; }
   #levelNum.down { color: var(--wrong); transition: none; }
 
-  main {
+  /* ---------- 公共布局 ---------- */
+  main { flex: 1; min-height: 0; display: flex; }
+  .stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .center {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    padding: 0 16px;
+    text-align: center;
+  }
+  .fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .top-line {
+    flex: none;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .hint {
+    flex: none;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .board {
     flex: 1;
     min-height: 0;
     display: grid;
@@ -88,7 +130,22 @@
     container-type: size;
     touch-action: none;
   }
-  #grid {
+  .cta { font-size: 24px; font-weight: 700; }
+  .cta small {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .result-title { font-size: 40px; font-weight: 800; }
+  .result.ok .result-title { color: var(--up); }
+  .result.bad .result-title { color: var(--wrong); }
+  .result-line { margin-top: 10px; font-size: 15px; color: var(--muted); }
+  .ok-mark { font-size: 72px; font-weight: 800; color: var(--up); }
+
+  /* ---------- 黑猩猩 ---------- */
+  .chimp-grid {
     /* 5 列 × 8 行,按可用宽高取较小者铺满 */
     --gw: min(100cqw, 100cqh * 5 / 8);
     width: var(--gw);
@@ -98,7 +155,7 @@
     grid-template-rows: repeat(8, 1fr);
     gap: calc(var(--gw) * .03);
   }
-  .cell {
+  .chimp-grid .cell {
     display: grid;
     place-items: center;
     border-radius: 12%;
@@ -107,20 +164,137 @@
     font-weight: 800;
     font-variant-numeric: tabular-nums;
   }
-  .cell.show { background: var(--tile); }
-  .cell.hide { background: var(--block); }
-  .cell.wrong { background: var(--wrong); }
+  .chimp-grid .show { background: var(--tile); }
+  .chimp-grid .hide { background: var(--block); }
+  .chimp-grid .wrong { background: var(--wrong); }
 
-  footer {
-    flex: none;
+  /* ---------- 数字广度 ---------- */
+  .span-view { font-size: 96px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .span-view.fix { color: var(--muted); font-weight: 400; }
+  .slots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    max-width: 340px;
+  }
+  .slots span {
+    width: 28px;
     height: 44px;
+    border-bottom: 2px solid var(--line);
+    font-size: 30px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .cmp { display: grid; gap: 14px; }
+  .cmp div { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .12em; }
+  .cmp .lbl { margin-right: 10px; font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+  .cmp .bad { color: var(--wrong); }
+  .keypad {
+    flex: none;
     display: grid;
-    place-items: center;
-    color: var(--muted);
-    font-size: 15px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 0 16px 4px;
+    transition: opacity .2s;
+  }
+  .keypad button {
+    height: 58px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    font-size: 26px;
+    font-weight: 600;
+  }
+  .keypad button:active { background: var(--line); }
+  .keypad button.blank { visibility: hidden; }
+  .keypad.off { opacity: .3; }
+
+  /* ---------- 记忆宫殿 ---------- */
+  .word { font-size: 56px; font-weight: 800; }
+  .palace-grid {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-content: start;
+    gap: 8px;
+    padding: 4px 16px 8px;
+    touch-action: pan-y;
+  }
+  .palace-grid button {
+    position: relative;
+    height: 46px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel);
+    font-size: 16px;
+  }
+  .palace-grid .done { opacity: .35; }
+  .palace-grid .target { background: var(--tile); border-color: transparent; }
+  .palace-grid .wrong { background: var(--wrong); border-color: transparent; }
+  .palace-grid .dim { opacity: .3; }
+  .palace-grid .badge {
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    font-size: 11px;
+    font-weight: 700;
   }
 
-  #sheet {
+  /* ---------- Stroop ---------- */
+  .stroop-word { font-size: 120px; font-weight: 800; line-height: 1; }
+  .fix { font-size: 48px; color: var(--muted); }
+  .stroop-miss { font-size: 40px; font-weight: 800; color: var(--wrong); }
+  .swatches {
+    flex: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 16px 4px;
+  }
+  .swatches button { height: 84px; border-radius: 16px; }
+  .swatches button:active { filter: brightness(.8); }
+
+  /* ---------- 舒尔特 ---------- */
+  .timebar {
+    flex: none;
+    height: 6px;
+    margin: 0 16px;
+    border-radius: 3px;
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .timebar i {
+    display: block;
+    height: 100%;
+    background: var(--tile);
+    transform-origin: left;
+  }
+  .schulte-grid {
+    --gw: min(100cqw, 100cqh);
+    width: var(--gw);
+    aspect-ratio: 1;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: calc(var(--gw) * .02);
+  }
+  .schulte-grid .cell {
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 10%;
+    background: var(--panel);
+    font-size: calc(var(--gw) * .075);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .schulte-grid .ok { background: var(--tile); }
+  .schulte-grid .bad { background: var(--wrong); }
+
+  /* ---------- 弹出面板 ---------- */
+  .sheet {
     position: fixed;
     inset: 0;
     display: grid;
@@ -128,7 +302,7 @@
     padding: 24px;
     background: rgba(0, 0, 0, .55);
   }
-  #sheet[hidden] { display: none; }
+  .sheet[hidden] { display: none; }
   .panel {
     width: min(100%, 340px);
     display: grid;
@@ -144,6 +318,19 @@
     font-weight: 600;
     color: var(--muted);
   }
+  .mode-list { display: grid; gap: 8px; }
+  .mode-list button {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .mode-list button.cur { border-color: var(--tile); background: rgba(42, 111, 219, .15); }
+  .mode-list .sub { font-size: 13px; font-weight: 400; color: var(--muted); }
   .stepper {
     display: flex;
     align-items: center;
@@ -152,14 +339,14 @@
   .stepper button {
     width: 56px;
     height: 56px;
-    border-radius: 50%;
     border: 1px solid var(--line);
+    border-radius: 50%;
     font-size: 28px;
     line-height: 1;
   }
   .stepper button:active { background: var(--line); }
   #pick {
-    font-size: 48px;
+    font-size: 44px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
   }
@@ -181,24 +368,34 @@
 </head>
 <body>
 <header>
-  <button id="levelBtn" type="button" aria-label="调整等级">
-    <span class="lbl">等级</span><span id="levelNum"></span><span class="caret">▾</span>
+  <button id="modeBtn" class="pill" type="button" aria-label="切换训练">
+    <span id="modeName"></span><span class="caret">▾</span>
   </button>
+  <div class="stats">
+    <button id="levelBtn" class="pill" type="button" aria-label="调整等级">
+      <span id="levelLbl"></span><span id="levelNum"></span><span id="levelUnit"></span><span class="caret">▾</span>
+    </button>
+    <span class="best">最佳 <b id="bestNum"></b></span>
+  </div>
 </header>
-<main>
-  <div id="grid"></div>
-</main>
-<footer id="hint"></footer>
+<main id="main"></main>
 
-<div id="sheet" hidden>
+<div id="modeSheet" class="sheet" hidden>
   <div class="panel">
-    <h2>调整等级</h2>
+    <h2>选择训练</h2>
+    <div id="modeList" class="mode-list"></div>
+  </div>
+</div>
+
+<div id="levelSheet" class="sheet" hidden>
+  <div class="panel">
+    <h2 id="levelTitle"></h2>
     <div class="stepper">
-      <button id="minus" type="button" aria-label="减一">−</button>
+      <button id="minus" type="button" aria-label="减少">−</button>
       <output id="pick"></output>
-      <button id="plus" type="button" aria-label="加一">+</button>
+      <button id="plus" type="button" aria-label="增加">+</button>
     </div>
-    <input id="range" type="range" step="1">
+    <input id="range" type="range">
     <div class="actions">
       <button id="cancel" type="button">取消</button>
       <button id="ok" type="button">确定</button>
@@ -206,158 +403,6 @@
   </div>
 </div>
 
-<script>
-(() => {
-  'use strict';
-
-  const COLS = 5, ROWS = 8, CELLS = COLS * ROWS;
-  const MIN = 4, MAX = CELLS;
-  const KEY = 'chimp-level';
-  const NEXT_DELAY = 250;  // 过关后出下一题的间隔(ms)
-  const FAIL_GUARD = 300;  // 出错后这段时间内的点击不算"继续",防止连点跳过答案
-
-  const $ = id => document.getElementById(id);
-  const gridEl = $('grid'), levelBtn = $('levelBtn'), levelNum = $('levelNum'), hint = $('hint');
-  const sheet = $('sheet'), pick = $('pick'), range = $('range');
-
-  const clamp = n => Math.min(MAX, Math.max(MIN, n));
-
-  function load() {
-    try {
-      const n = parseInt(localStorage.getItem(KEY), 10);
-      return Number.isFinite(n) ? clamp(n) : MIN;
-    } catch {
-      return MIN;
-    }
-  }
-
-  function save() {
-    try { localStorage.setItem(KEY, String(level)); } catch {}
-  }
-
-  let level = load();
-  const board = new Array(CELLS).fill(0);  // 每格的数字,0 表示空
-  let count = 0;          // 本题数字个数
-  let next = 1;           // 下一个该点的数字
-  let phase = 'ready';    // ready: 数字可见  playing: 已隐藏  failed: 出错待继续  busy: 过关间隔
-  let failedAt = 0;
-  let timer = 0;
-  let flashTimer = 0;
-
-  const cells = [];
-  for (let i = 0; i < CELLS; i++) {
-    const el = document.createElement('div');
-    el.className = 'cell';
-    el.dataset.i = i;
-    gridEl.appendChild(el);
-    cells.push(el);
-  }
-
-  function paint(i, mode) {
-    const el = cells[i];
-    el.className = 'cell ' + mode;
-    el.textContent = mode === 'show' || mode === 'wrong' ? board[i] : '';
-  }
-
-  function setLevel(n, flash) {
-    level = clamp(n);
-    save();
-    levelNum.textContent = level;
-    if (!flash) return;
-    levelNum.classList.remove('up', 'down');
-    void levelNum.offsetWidth;
-    levelNum.classList.add(flash);
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => levelNum.classList.remove(flash), 350);
-  }
-
-  function newRound() {
-    clearTimeout(timer);
-    board.fill(0);
-    count = level;
-    const idx = Array.from({ length: CELLS }, (_, i) => i);
-    for (let k = 0; k < count; k++) {
-      const r = k + Math.floor(Math.random() * (CELLS - k));
-      [idx[k], idx[r]] = [idx[r], idx[k]];
-      board[idx[k]] = k + 1;
-    }
-    next = 1;
-    phase = 'ready';
-    hint.textContent = '';
-    for (let i = 0; i < CELLS; i++) paint(i, board[i] ? 'show' : 'empty');
-  }
-
-  function tap(i) {
-    const n = board[i];
-    if (!n) return;
-    if (n !== next) return fail(i);
-    board[i] = 0;
-    paint(i, 'empty');
-    if (next === 1) {
-      phase = 'playing';
-      for (let j = 0; j < CELLS; j++) if (board[j]) paint(j, 'hide');
-    }
-    if (next === count) {
-      phase = 'busy';
-      setLevel(level + 1, 'up');
-      timer = setTimeout(newRound, NEXT_DELAY);
-    } else {
-      next++;
-    }
-  }
-
-  function fail(i) {
-    phase = 'failed';
-    failedAt = performance.now();
-    for (let j = 0; j < CELLS; j++) if (board[j]) paint(j, j === i ? 'wrong' : 'show');
-    setLevel(level - 1, 'down');
-    hint.textContent = '点击任意处继续';
-  }
-
-  // 按下即判定,不等手指抬起
-  document.addEventListener('pointerdown', e => {
-    if (e.button !== 0 || !sheet.hidden || levelBtn.contains(e.target)) return;
-    if (phase === 'failed') {
-      if (performance.now() - failedAt > FAIL_GUARD) newRound();
-      return;
-    }
-    if (phase !== 'ready' && phase !== 'playing') return;
-    const el = e.target.closest('.cell');
-    if (el) tap(+el.dataset.i);
-  });
-
-  // 屏蔽 iOS 双指缩放
-  document.addEventListener('gesturestart', e => e.preventDefault());
-
-  range.min = MIN;
-  range.max = MAX;
-
-  function setPick(n) {
-    n = clamp(n);
-    pick.textContent = n;
-    range.value = n;
-  }
-
-  levelBtn.addEventListener('click', () => {
-    setPick(level);
-    sheet.hidden = false;
-  });
-  $('minus').addEventListener('click', () => setPick(+range.value - 1));
-  $('plus').addEventListener('click', () => setPick(+range.value + 1));
-  range.addEventListener('input', () => setPick(+range.value));
-  $('cancel').addEventListener('click', () => { sheet.hidden = true; });
-  sheet.addEventListener('click', e => { if (e.target === sheet) sheet.hidden = true; });
-  $('ok').addEventListener('click', () => {
-    sheet.hidden = true;
-    setLevel(+range.value);
-    newRound();
-  });
-
-  levelNum.textContent = level;
-  newRound();
-
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-})();
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

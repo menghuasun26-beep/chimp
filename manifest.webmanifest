@@ -1,6 +1,6 @@
 {
-  "name": "黑猩猩记忆",
-  "short_name": "黑猩猩",
+  "name": "伪人检测器",
+  "short_name": "伪人检测器",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
